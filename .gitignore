@@ -1,0 +1,13 @@
+# 数据集
+datasets/
+
+# 检查点/模型权重
+checkpoints/
+*.pt
+*.pth
+
+# VS Code 缓存
+.vscode/
+
+# 训练日志
+logs/
