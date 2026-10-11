@@ -1,0 +1,58 @@
+# =====================================================================
+# ⚠️ 历史配置存档（只读记录，不可在新管线执行）
+# =====================================================================
+# 本文件记录产出论文 UCLA 全部旧数字的真实配置（joint 93.53 / bone 91.16 /
+# motion 88.79 / bone-motion 88.58 / 四流融合 96.98，见 artifacts/results/）。
+#
+# 关键事实（已由 checkpoint 字节级检验证实）：
+#   1. 旧 UCLA 全部流均为「全 Mamba 旧架构」，没有模态感知分支
+#      （bone/motion 流的 state_dict 键为 temporal_mamba.*，而非 temporal_layer.*）；
+#   2. 旧架构代码已封存于 artifacts/legacy_code/ucla_jan2026/（含当时模型定义），
+#      复现旧数字只能在那个目录下按其原始相对路径运行；
+#   3. src/models 为最终架构（NTU60/NTU120 权重兼容），与旧 UCLA 权重不兼容。
+# =====================================================================
+experiment: ucla_legacy_202601   # 仅作记录
+runner: artifacts/legacy_code/ucla_jan2026   # 冻结运行环境
+seed: 42
+
+dataset:
+  name: nw_ucla
+  data_path: datasets/NW-UCLA/all_sqe
+  train_label_path: datasets/NW-UCLA/ucla_train_data.json
+  val_label_path: datasets/NW-UCLA/ucla_val_data.json
+  num_classes: 10
+  num_joints: 20
+  max_frames: 52
+
+model:
+  arch: legacy_all_mamba         # 旧架构：所有模态（含bone/motion）都用 Per-Joint Mamba
+  model_channels: 128
+  mamba_d_state: 16
+  decoder_time_condition: false
+
+phase1:
+  epochs: 300
+  lr: 1.0e-4
+  batch_size: 32
+  patience: 30
+  num_train_timesteps: 4000
+  optimizer: adamw
+
+phase2:
+  epochs: 300
+  lr: 1.0e-4
+  batch_size: 32
+  weight_decay: 4.0e-4
+  label_smoothing: 0.1
+  optimizer: adamw
+  patience: 50
+
+fusion:
+  method: stacking_lr            # 旧版在测试集上做5折CV（存在数据泄露，已在新管线修复）
+  meta_C: 0.1
+  meta_max_iter: 2000
+
+streams: [joint, bone, motion, bone-motion]
+
+runtime:
+  num_workers: 4

@@ -1,0 +1,45 @@
+# =====================================================================
+# 实验: NTU60 Cross-Subject 主线（两阶段完整协议）
+# 历史出处: phase1_ntu_pretrain.py + phase2_ntu_finetune.py + run_ntu_joint_cs.sh
+# 说明: 所有数值为 2026-01 服务器运行的真实值；流切换用 --modality
+# =====================================================================
+experiment: ntu60_cs
+seed: 42
+
+dataset:
+  name: ntu60
+  split: CS
+  data_path: datasets/NTU60/ntu/NTU60_CS.npz
+  num_classes: 60
+  num_joints: 25
+  max_frames: 64
+
+model:
+  arch: final                  # 模态感知: joint->Mamba, bone/motion->DWConv
+  model_channels: 128          # 注意: 论文正文写 width 64，代码实际为 128（返修需统一口径）
+  mamba_d_state: 16
+  decoder_time_condition: false  # Neutral Decoder（src/models 结构内生）
+
+phase1:
+  epochs: 80
+  lr: 1.0e-4
+  batch_size: 64
+  patience: 20
+  num_train_timesteps: 1000
+  optimizer: adamw
+
+phase2:
+  epochs: 120
+  lr: 0.1                      # SGD+Nesterov 专用学习率
+  batch_size: 64
+  weight_decay: 4.0e-4
+  warmup_epochs: 5
+  mixup_alpha: 0.2
+  label_smoothing: 0.1
+  optimizer: sgd_nesterov
+  patience: 40
+
+streams: [joint, bone, motion]
+
+runtime:
+  num_workers: 8

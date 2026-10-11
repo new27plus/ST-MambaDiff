@@ -1,0 +1,54 @@
+# =====================================================================
+# 实验: NW-UCLA 四流主线 —— 最终架构（模态感知）重跑
+# 用途: IJCV 返修核心实验。旧 UCLA 数字（joint 93.53 / 融合 96.98）由
+#       旧架构(全模态Mamba)产出，与本配置的 arch:final 不同，不可混用。
+# 协议说明（历史真实值，注意与论文正文的出入，返修需统一口径）:
+#   - phase1 T=4000（论文写 1000）
+#   - phase2 AdamW lr=1e-4、无 mixup（论文写 SGD 0.1 + mixup）
+# 多种子: --seed 0 / 1 / 2 分别跑，输出自动隔离在 runs/ucla_final/.../seed<k>/
+# =====================================================================
+experiment: ucla_final
+seed: 42
+
+dataset:
+  name: nw_ucla
+  data_path: ../Code/datasets/NW-UCLA/all_sqe
+  train_label_path: ../Code/datasets/NW-UCLA/ucla_train_data.json
+  val_label_path: ../Code/datasets/NW-UCLA/ucla_val_data.json
+  num_classes: 10
+  num_joints: 20
+  max_frames: 52
+
+model:
+  arch: final                  # joint->Mamba, bone/motion/bone-motion->DWConv
+  model_channels: 128
+  mamba_d_state: 16
+  decoder_time_condition: false
+
+phase1:
+  epochs: 300
+  lr: 1.0e-4
+  batch_size: 32
+  patience: 30
+  num_train_timesteps: 4000
+  optimizer: adamw
+
+phase2:
+  epochs: 300
+  lr: 1.0e-4
+  batch_size: 32
+  weight_decay: 4.0e-4
+  label_smoothing: 0.1
+  optimizer: adamw             # 与历史一致（无 mixup、余弦退火）
+  patience: 50
+
+fusion:
+  method: stacking_lr          # 无泄露版: 训练集OOF拟合元分类器, 测试集仅前向一次
+  meta_C: 0.1
+  meta_max_iter: 2000
+  oof_splits: 5
+
+streams: [joint, bone, motion, bone-motion]
+
+runtime:
+  num_workers: 4

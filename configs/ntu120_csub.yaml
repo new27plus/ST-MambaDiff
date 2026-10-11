@@ -1,0 +1,44 @@
+# =====================================================================
+# 实验: NTU120 Cross-Subject 主线
+# 历史出处: Experment 根目录代码（checkpoints_ntu120/CSub 的产生配置）
+# =====================================================================
+experiment: ntu120_csub
+seed: 42
+
+dataset:
+  name: ntu120
+  split: CSub
+  data_path: datasets/NTU120/ntu120/NTU120_CSub.npz
+  num_classes: 120
+  num_joints: 25
+  max_frames: 64
+
+model:
+  arch: final
+  model_channels: 128
+  mamba_d_state: 16
+  decoder_time_condition: false
+
+phase1:
+  epochs: 80
+  lr: 1.0e-4
+  batch_size: 64
+  patience: 20
+  num_train_timesteps: 1000
+  optimizer: adamw
+
+phase2:
+  epochs: 120
+  lr: 0.1
+  batch_size: 64
+  weight_decay: 4.0e-4
+  warmup_epochs: 5
+  mixup_alpha: 0.2
+  label_smoothing: 0.1
+  optimizer: sgd_nesterov
+  patience: 40
+
+streams: [joint, bone, motion]
+
+runtime:
+  num_workers: 8

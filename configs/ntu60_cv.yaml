@@ -1,0 +1,44 @@
+# =====================================================================
+# 实验: NTU60 Cross-View 主线（两阶段完整协议）
+# 与 ntu60_cs 仅数据路径与划分不同 —— 切换数据集不再改代码
+# =====================================================================
+experiment: ntu60_cv
+seed: 42
+
+dataset:
+  name: ntu60
+  split: CV
+  data_path: datasets/NTU60/ntu/NTU60_CV.npz
+  num_classes: 60
+  num_joints: 25
+  max_frames: 64
+
+model:
+  arch: final
+  model_channels: 128
+  mamba_d_state: 16
+  decoder_time_condition: false
+
+phase1:
+  epochs: 80
+  lr: 1.0e-4
+  batch_size: 64
+  patience: 20
+  num_train_timesteps: 1000
+  optimizer: adamw
+
+phase2:
+  epochs: 120
+  lr: 0.1
+  batch_size: 64
+  weight_decay: 4.0e-4
+  warmup_epochs: 5
+  mixup_alpha: 0.2
+  label_smoothing: 0.1
+  optimizer: sgd_nesterov
+  patience: 40
+
+streams: [joint, bone, motion]
+
+runtime:
+  num_workers: 8
